@@ -20,10 +20,13 @@ struct GitGraphView: View {
                     let isGraphOnly = entry.hash.isEmpty && entry.message.isEmpty
                     let graphChars = Array(entry.graphPrefix.filter { $0 != " " })
                     let graphWidth = CGFloat(graphChars.count) * colWidth + dotInset
+                    let prevChars: [Character]? = index > 0
+                        ? Array(entries[index - 1].graphPrefix.filter { $0 != " " })
+                        : nil
 
                     if isGraphOnly {
                         Canvas { context, size in
-                            drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: size.height / 2)
+                            drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: size.height / 2, prevChars: prevChars)
                         }
                         .frame(height: 10)
                     } else {
@@ -58,7 +61,7 @@ struct GitGraphView: View {
                         .frame(maxWidth: .infinity, minHeight: minRowHeight, alignment: .topLeading)
                         .overlay(alignment: .topLeading) {
                             Canvas { context, size in
-                                drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: 9)
+                                drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: 9, prevChars: prevChars)
                             }
                             .frame(width: graphWidth)
                         }
@@ -68,19 +71,28 @@ struct GitGraphView: View {
         }
     }
 
-    private func drawGraphRow(context: inout GraphicsContext, chars: [Character], rowH: CGFloat, anchorY: CGFloat) {
+    private func hasConnectionFromAbove(col: Int, prevChars: [Character]?) -> Bool {
+        guard let prev = prevChars else { return false }
+        if col < prev.count, ["*", "o", "|", "\\"].contains(String(prev[col])) { return true }
+        if col + 1 < prev.count, prev[col + 1] == "/" { return true }
+        return false
+    }
+
+    private func drawGraphRow(context: inout GraphicsContext, chars: [Character], rowH: CGFloat, anchorY: CGFloat, prevChars: [Character]?) {
         for (col, char) in chars.enumerated() {
             let color = graphColors[col % graphColors.count]
             let cx = CGFloat(col) * colWidth + dotInset
 
             switch char {
             case "*":
-                // Draw connecting line through the full row, then dot on top
-                context.stroke(Path { p in p.move(to: CGPoint(x: cx, y: 0)); p.addLine(to: CGPoint(x: cx, y: rowH)) }, with: .color(color), lineWidth: 1.5)
+                // Draw connecting line through the row, then dot on top
+                let lineTop: CGFloat = hasConnectionFromAbove(col: col, prevChars: prevChars) ? 0 : anchorY
+                context.stroke(Path { p in p.move(to: CGPoint(x: cx, y: lineTop)); p.addLine(to: CGPoint(x: cx, y: rowH)) }, with: .color(color), lineWidth: 1.5)
                 context.fill(Circle().path(in: CGRect(x: cx - 4, y: anchorY - 4, width: 8, height: 8)), with: .color(color))
             case "o":
                 // Draw connecting line, then white-filled circle with colored border
-                context.stroke(Path { p in p.move(to: CGPoint(x: cx, y: 0)); p.addLine(to: CGPoint(x: cx, y: rowH)) }, with: .color(color), lineWidth: 1.5)
+                let lineTop: CGFloat = hasConnectionFromAbove(col: col, prevChars: prevChars) ? 0 : anchorY
+                context.stroke(Path { p in p.move(to: CGPoint(x: cx, y: lineTop)); p.addLine(to: CGPoint(x: cx, y: rowH)) }, with: .color(color), lineWidth: 1.5)
                 context.fill(Circle().path(in: CGRect(x: cx - 4, y: anchorY - 4, width: 8, height: 8)), with: .color(.white))
                 context.stroke(Circle().path(in: CGRect(x: cx - 4, y: anchorY - 4, width: 8, height: 8)), with: .color(color), lineWidth: 2)
             case "|":

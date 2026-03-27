@@ -90,18 +90,9 @@ struct DirStatView: View {
     private var statsView: some View {
         let unstaged = controller.gitData.unstagedStats
         let staged = controller.gitData.stagedStats
+        let untracked = controller.gitData.untrackedCount
 
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Text("Unstaged: \(unstaged.fileCount) \(unstaged.fileCount == 1 ? "file" : "files"),")
-                    .font(.system(size: 11))
-                Text("+\(formatNumber(unstaged.additions))")
-                    .foregroundStyle(.green)
-                    .font(.system(size: 11, design: .monospaced))
-                Text("/ -\(formatNumber(unstaged.deletions))")
-                    .foregroundStyle(.red)
-                    .font(.system(size: 11, design: .monospaced))
-            }
             HStack(spacing: 4) {
                 Text("Staged: \(staged.fileCount) \(staged.fileCount == 1 ? "file" : "files"),")
                     .font(.system(size: 11))
@@ -112,6 +103,18 @@ struct DirStatView: View {
                     .foregroundStyle(.red)
                     .font(.system(size: 11, design: .monospaced))
             }
+            HStack(spacing: 4) {
+                Text("Unstaged: \(unstaged.fileCount) \(unstaged.fileCount == 1 ? "file" : "files"),")
+                    .font(.system(size: 11))
+                Text("+\(formatNumber(unstaged.additions))")
+                    .foregroundStyle(.green)
+                    .font(.system(size: 11, design: .monospaced))
+                Text("/ -\(formatNumber(unstaged.deletions))")
+                    .foregroundStyle(.red)
+                    .font(.system(size: 11, design: .monospaced))
+            }
+            Text("Untracked: \(untracked) \(untracked == 1 ? "file" : "files")")
+                .font(.system(size: 11))
         }
     }
 

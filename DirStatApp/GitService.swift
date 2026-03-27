@@ -33,11 +33,66 @@ actor GitService {
             nameOnly: run("git", args: ["diff", "--cached", "--name-only"], in: directoryPath)
         )
 
+        // Count untracked files
+        if let untrackedOutput = run("git", args: ["ls-files", "--others", "--exclude-standard"], in: directoryPath) {
+            let trimmed = untrackedOutput.trimmingCharacters(in: .whitespacesAndNewlines)
+            data.untrackedCount = trimmed.isEmpty ? 0 : trimmed.split(separator: "\n").count
+        }
+
         if let graphOutput = run("git", args: [
             "log", "--graph", "--format=format:%h§%d§%s", "--boundary",
             "\(baseBranch)...HEAD"
-        ], in: directoryPath) {
+        ], in: directoryPath),
+           !graphOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             data.graphEntries = GitGraphParser.parse(graphOutput)
+        }
+
+        // When branch is at the same commit as base, show a single boundary row for HEAD
+        if data.graphEntries.isEmpty {
+            if let headInfo = run("git", args: ["log", "-1", "--format=%h§%d§%s"], in: directoryPath)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) {
+                let parts = headInfo.split(separator: "§", maxSplits: 2, omittingEmptySubsequences: false)
+                if parts.count == 3 {
+                    data.graphEntries = [GitGraphEntry(
+                        graphPrefix: "o",
+                        hash: String(parts[0]),
+                        refs: String(parts[1]),
+                        message: String(parts[2]),
+                        isBoundary: true
+                    )]
+                }
+            }
+        }
+
+        // Insert uncommitted change rows above HEAD commit (like tig)
+        var uncommittedRows: [GitGraphEntry] = []
+        if data.stagedStats.fileCount > 0 {
+            uncommittedRows.append(GitGraphEntry(
+                graphPrefix: "| o", hash: "", refs: "", message: "Staged changes", isBoundary: true
+            ))
+        }
+        if data.unstagedStats.fileCount > 0 {
+            uncommittedRows.append(GitGraphEntry(
+                graphPrefix: "| o", hash: "", refs: "", message: "Unstaged changes", isBoundary: true
+            ))
+        }
+        if data.untrackedCount > 0 {
+            uncommittedRows.append(GitGraphEntry(
+                graphPrefix: "| o", hash: "", refs: "", message: "Untracked changes", isBoundary: true
+            ))
+        }
+        if !uncommittedRows.isEmpty {
+            // Add a graph-only connector row with diagonal line from col 1 to col 0
+            uncommittedRows.append(GitGraphEntry(
+                graphPrefix: "|/", hash: "", refs: "", message: "", isBoundary: false
+            ))
+            // Find HEAD commit (refs contain "HEAD ->") and insert before it
+            if let headIndex = data.graphEntries.firstIndex(where: { $0.refs.contains("HEAD ->") }) {
+                data.graphEntries.insert(contentsOf: uncommittedRows, at: headIndex)
+            } else {
+                // Fallback: prepend if HEAD not found
+                data.graphEntries = uncommittedRows + data.graphEntries
+            }
         }
 
         data.branches = parseBranches(directoryPath: directoryPath)

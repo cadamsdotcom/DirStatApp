@@ -39,6 +39,7 @@ struct GitData: Sendable {
     var baseBranch: String = "main"
     var unstagedStats: FileStats = FileStats()
     var stagedStats: FileStats = FileStats()
+    var untrackedCount: Int = 0
     var graphEntries: [GitGraphEntry] = []
     var branches: [BranchInfo] = []
     var errorMessage: String? = nil
