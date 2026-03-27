@@ -6,9 +6,9 @@ A macOS menu-bar app that displays real-time git repository status in floating b
 
 ## Features
 
-- **Live git status** — current branch, latest commit, staged/unstaged changes with addition and deletion counts
+- **Live git status** — current branch, latest commit, staged/unstaged/untracked changes with addition and deletion counts
 - **Ahead/behind tracking** — shows commits ahead (green) and behind (red) relative to a configurable base branch
-- **Visual git graph** — color-coded branch history rendered in a Canvas view
+- **Visual git graph** — color-coded branch history with uncommitted changes shown above HEAD (like tig)
 - **Multiple windows** — monitor several repositories simultaneously
 - **Floating borderless windows** — drag to reposition, click to choose a directory, right-click for options
 - **Adjustable transparency** — per-window opacity slider from 10% to 100%
