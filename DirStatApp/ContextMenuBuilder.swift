@@ -4,7 +4,36 @@ enum ContextMenuBuilder {
     static func build(for controller: WindowController) -> NSMenu {
         let menu = NSMenu()
 
+        // Choose Folder
+        let chooseFolderItem = NSMenuItem(title: "Choose Folder…", action: #selector(ChooseFolderMenuTarget.chooseFolder(_:)), keyEquivalent: "")
+        let chooseFolderTarget = ChooseFolderMenuTarget(controller: controller)
+        chooseFolderItem.target = chooseFolderTarget
+        chooseFolderItem.representedObject = chooseFolderTarget
+        menu.addItem(chooseFolderItem)
+
+        // New Window
+        let newItem = NSMenuItem(title: "New Window", action: #selector(WindowMenuTarget.newWindow(_:)), keyEquivalent: "")
+        let newTarget = WindowMenuTarget()
+        newItem.target = newTarget
+        newItem.representedObject = newTarget
+        menu.addItem(newItem)
+
+        // Hide Window
+        let hideItem = NSMenuItem(title: "Hide Window", action: #selector(HideMenuTarget.hideWindow(_:)), keyEquivalent: "")
+        let hideTarget = HideMenuTarget(controller: controller)
+        hideItem.target = hideTarget
+        hideItem.representedObject = hideTarget
+        menu.addItem(hideItem)
+
+        // Close Window
+        let closeItem = NSMenuItem(title: "Close Window", action: #selector(CloseMenuTarget.closeWindow(_:)), keyEquivalent: "")
+        let closeTarget = CloseMenuTarget(controller: controller)
+        closeItem.target = closeTarget
+        closeItem.representedObject = closeTarget
+        menu.addItem(closeItem)
+
         // Transparency slider
+        menu.addItem(NSMenuItem.separator())
         let sliderItem = NSMenuItem()
         sliderItem.title = "Transparency"
         let sliderView = SliderMenuItem(initialValue: controller.state.alpha)
@@ -14,14 +43,13 @@ enum ContextMenuBuilder {
         sliderItem.view = sliderView
         menu.addItem(sliderItem)
 
-        menu.addItem(NSMenuItem.separator())
-
-        // Branch list
+        // Branch lists
         let localBranches = controller.gitData.branches.filter { !$0.isRemote }
         let remoteBranches = controller.gitData.branches.filter { $0.isRemote }
 
         if !localBranches.isEmpty {
-            let header = NSMenuItem(title: "Local Branches", action: nil, keyEquivalent: "")
+            menu.addItem(NSMenuItem.separator())
+            let header = NSMenuItem(title: "Track Changes Against Local Branch", action: nil, keyEquivalent: "")
             header.isEnabled = false
             menu.addItem(header)
 
@@ -39,7 +67,7 @@ enum ContextMenuBuilder {
 
         if !remoteBranches.isEmpty {
             menu.addItem(NSMenuItem.separator())
-            let header = NSMenuItem(title: "Remote Branches", action: nil, keyEquivalent: "")
+            let header = NSMenuItem(title: "Track Changes Against Remote Branch", action: nil, keyEquivalent: "")
             header.isEnabled = false
             menu.addItem(header)
 
@@ -54,22 +82,6 @@ enum ContextMenuBuilder {
                 menu.addItem(item)
             }
         }
-
-        menu.addItem(NSMenuItem.separator())
-
-        // New Window
-        let newItem = NSMenuItem(title: "New Window", action: #selector(WindowMenuTarget.newWindow(_:)), keyEquivalent: "")
-        let newTarget = WindowMenuTarget()
-        newItem.target = newTarget
-        newItem.representedObject = newTarget
-        menu.addItem(newItem)
-
-        // Close Window
-        let closeItem = NSMenuItem(title: "Close Window", action: #selector(CloseMenuTarget.closeWindow(_:)), keyEquivalent: "")
-        let closeTarget = CloseMenuTarget(controller: controller)
-        closeItem.target = closeTarget
-        closeItem.representedObject = closeTarget
-        menu.addItem(closeItem)
 
         return menu
     }
@@ -92,6 +104,30 @@ class BranchMenuTarget: NSObject {
 class WindowMenuTarget: NSObject {
     @objc func newWindow(_ sender: NSMenuItem) {
         WindowManager.shared.createWindow()
+    }
+}
+
+class HideMenuTarget: NSObject {
+    let controller: WindowController
+
+    init(controller: WindowController) {
+        self.controller = controller
+    }
+
+    @objc func hideWindow(_ sender: NSMenuItem) {
+        controller.hideWindow()
+    }
+}
+
+class ChooseFolderMenuTarget: NSObject {
+    let controller: WindowController
+
+    init(controller: WindowController) {
+        self.controller = controller
+    }
+
+    @objc func chooseFolder(_ sender: NSMenuItem) {
+        controller.openDirectoryChooser()
     }
 }
 

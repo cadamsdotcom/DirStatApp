@@ -8,6 +8,7 @@ class WindowController: NSObject {
     var gitData: GitData = GitData()
 
     let window: BorderlessWindow
+    var isVisible: Bool = true
     private var hostingView: NSHostingView<DirStatView>!
     private var refreshTimer: Timer?
     private let gitService = GitService()
@@ -114,6 +115,20 @@ class WindowController: NSObject {
         scheduleSave()
     }
 
+    func hideWindow() {
+        isVisible = false
+        window.orderOut(nil)
+    }
+
+    func showWindow() {
+        isVisible = true
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func toggleVisibility() {
+        if isVisible { hideWindow() } else { showWindow() }
+    }
+
     func closeWindow() {
         stopRefreshTimer()
         window.orderOut(nil)
@@ -153,7 +168,7 @@ extension WindowController: NSWindowDelegate {
 
 extension WindowController: BorderlessWindowDelegate {
     func borderlessWindowClicked(_ window: BorderlessWindow) {
-        openDirectoryChooser()
+        // No-op: directory chooser is available via right-click context menu
     }
 
     func borderlessWindowRightClicked(_ window: BorderlessWindow, event: NSEvent) {

@@ -19,6 +19,15 @@ class WindowManager {
         PersistenceService.shared.saveAll()
     }
 
+    func toggleAllVisibility() {
+        let anyVisible = controllers.contains { $0.isVisible }
+        if anyVisible {
+            for controller in controllers { controller.hideWindow() }
+        } else {
+            for controller in controllers { controller.showWindow() }
+        }
+    }
+
     func restoreWindows() {
         let states = PersistenceService.shared.load()
         if states.isEmpty {

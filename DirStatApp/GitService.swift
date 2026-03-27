@@ -68,29 +68,42 @@ actor GitService {
         var uncommittedRows: [GitGraphEntry] = []
         if data.stagedStats.fileCount > 0 {
             uncommittedRows.append(GitGraphEntry(
-                graphPrefix: "| o", hash: "", refs: "", message: "Staged changes", isBoundary: true
+                graphPrefix: "_o", hash: "", refs: "", message: "Staged changes", isBoundary: true, isUncommitted: true
             ))
         }
         if data.unstagedStats.fileCount > 0 {
             uncommittedRows.append(GitGraphEntry(
-                graphPrefix: "| o", hash: "", refs: "", message: "Unstaged changes", isBoundary: true
+                graphPrefix: "_o", hash: "", refs: "", message: "Unstaged changes", isBoundary: true, isUncommitted: true
             ))
         }
         if data.untrackedCount > 0 {
             uncommittedRows.append(GitGraphEntry(
-                graphPrefix: "| o", hash: "", refs: "", message: "Untracked changes", isBoundary: true
+                graphPrefix: "_o", hash: "", refs: "", message: "Untracked changes", isBoundary: true, isUncommitted: true
             ))
         }
         if !uncommittedRows.isEmpty {
-            // Add a graph-only connector row with diagonal line from col 1 to col 0
+            // Connector row: diagonal from column 1 back to column 0
             uncommittedRows.append(GitGraphEntry(
-                graphPrefix: "|/", hash: "", refs: "", message: "", isBoundary: false
+                graphPrefix: "_/", hash: "", refs: "", message: "", isBoundary: false, isUncommitted: true
             ))
-            // Find HEAD commit (refs contain "HEAD ->") and insert before it
-            if let headIndex = data.graphEntries.firstIndex(where: { $0.refs.contains("HEAD ->") }) {
+            // Find HEAD commit and insert before it
+            // Use "|" in col 0 when there are commits above (to continue the line),
+            // "." when HEAD is first (nothing to connect to)
+            let headIndex = data.graphEntries.firstIndex(where: { $0.refs.contains("HEAD ->") })
+            let col0: String = (headIndex ?? 0) > 0 ? "|" : "."
+            for i in uncommittedRows.indices {
+                uncommittedRows[i] = GitGraphEntry(
+                    graphPrefix: uncommittedRows[i].graphPrefix.replacingOccurrences(of: "_", with: col0),
+                    hash: uncommittedRows[i].hash,
+                    refs: uncommittedRows[i].refs,
+                    message: uncommittedRows[i].message,
+                    isBoundary: uncommittedRows[i].isBoundary,
+                    isUncommitted: uncommittedRows[i].isUncommitted
+                )
+            }
+            if let headIndex {
                 data.graphEntries.insert(contentsOf: uncommittedRows, at: headIndex)
             } else {
-                // Fallback: prepend if HEAD not found
                 data.graphEntries = uncommittedRows + data.graphEntries
             }
         }

@@ -12,10 +12,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         statusItem.menu = buildMenu()
 
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            self?.handleKeyDown(event) ?? event
+        }
+
         WindowManager.shared.restoreWindows()
         if WindowManager.shared.controllers.isEmpty {
             WindowManager.shared.createWindow()
         }
+    }
+
+    private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard let chars = event.charactersIgnoringModifiers?.lowercased(), chars == "h" else { return event }
+
+        if flags == [.command, .shift] {
+            // Cmd+Shift+H: toggle all windows
+            WindowManager.shared.toggleAllVisibility()
+            return nil
+        } else if flags == [.command] {
+            // Cmd+H: hide focused window
+            if let keyWindow = NSApp.keyWindow as? BorderlessWindow,
+               let controller = WindowManager.shared.controllers.first(where: { $0.window === keyWindow }) {
+                controller.hideWindow()
+                return nil
+            }
+        }
+        return event
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -43,11 +66,15 @@ extension AppDelegate: NSMenuDelegate {
             } else {
                 title = "No Directory"
             }
-            let item = NSMenuItem(title: title, action: #selector(focusWindow(_:)), keyEquivalent: "")
+            let item = NSMenuItem(title: title, action: #selector(toggleWindowVisibility(_:)), keyEquivalent: "")
             item.representedObject = controller
+            item.state = controller.isVisible ? .on : .off
             menu.addItem(item)
         }
 
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Show All", action: #selector(showAllWindows), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Hide All", action: #selector(hideAllWindows), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
     }
@@ -56,9 +83,17 @@ extension AppDelegate: NSMenuDelegate {
         WindowManager.shared.createWindow()
     }
 
-    @objc private func focusWindow(_ sender: NSMenuItem) {
+    @objc private func showAllWindows() {
+        for controller in WindowManager.shared.controllers { controller.showWindow() }
+    }
+
+    @objc private func hideAllWindows() {
+        for controller in WindowManager.shared.controllers { controller.hideWindow() }
+    }
+
+    @objc private func toggleWindowVisibility(_ sender: NSMenuItem) {
         guard let controller = sender.representedObject as? WindowController else { return }
-        controller.window.makeKeyAndOrderFront(nil)
+        controller.toggleVisibility()
     }
 
     private func abbreviatePath(_ path: String) -> String {

@@ -26,7 +26,7 @@ struct GitGraphView: View {
 
                     if isGraphOnly {
                         Canvas { context, size in
-                            drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: size.height / 2, prevChars: prevChars)
+                            drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: size.height / 2, prevChars: prevChars, isUncommitted: entry.isUncommitted)
                         }
                         .frame(height: 10)
                     } else {
@@ -61,7 +61,7 @@ struct GitGraphView: View {
                         .frame(maxWidth: .infinity, minHeight: minRowHeight, alignment: .topLeading)
                         .overlay(alignment: .topLeading) {
                             Canvas { context, size in
-                                drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: 9, prevChars: prevChars)
+                                drawGraphRow(context: &context, chars: graphChars, rowH: size.height, anchorY: 9, prevChars: prevChars, isUncommitted: entry.isUncommitted)
                             }
                             .frame(width: graphWidth)
                         }
@@ -78,9 +78,9 @@ struct GitGraphView: View {
         return false
     }
 
-    private func drawGraphRow(context: inout GraphicsContext, chars: [Character], rowH: CGFloat, anchorY: CGFloat, prevChars: [Character]?) {
+    private func drawGraphRow(context: inout GraphicsContext, chars: [Character], rowH: CGFloat, anchorY: CGFloat, prevChars: [Character]?, isUncommitted: Bool = false) {
         for (col, char) in chars.enumerated() {
-            let color = graphColors[col % graphColors.count]
+            let color = (isUncommitted && col > 0) ? Color.green : graphColors[col % graphColors.count]
             let cx = CGFloat(col) * colWidth + dotInset
 
             switch char {

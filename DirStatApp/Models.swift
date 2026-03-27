@@ -73,12 +73,14 @@ struct GitGraphEntry: Identifiable, Sendable {
     let refs: String
     let message: String
     let isBoundary: Bool
+    let isUncommitted: Bool
 
-    nonisolated init(graphPrefix: String, hash: String, refs: String, message: String, isBoundary: Bool) {
+    nonisolated init(graphPrefix: String, hash: String, refs: String, message: String, isBoundary: Bool, isUncommitted: Bool = false) {
         self.graphPrefix = graphPrefix
         self.hash = hash
         self.refs = refs
         self.message = message
         self.isBoundary = isBoundary
+        self.isUncommitted = isUncommitted
     }
 }
